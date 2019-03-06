@@ -1,0 +1,16 @@
+{
+    "description": "Schema for a PELE simulation block",
+    "required": true,
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+        "commandType": {
+            "type": "string",
+            "required": true,
+            "enum": [
+                "energyComputation"
+            ],
+        },
+	    "NonBonding" : @NonBonding@
+    }
+}

@@ -1,0 +1,174 @@
+{
+    "type": "array",
+    "items": {
+        "type": [
+            {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "rmsd"
+                        ],
+                        "required": true
+                    },
+                    "tag": {
+                        "type": "string"
+                    },
+                    "logIt": {
+                        "type": "boolean",
+                        "default": true
+                    },
+                    "includeHydrogens": {
+                        "type": "boolean",
+                        "default": false
+                    },
+                    "doSuperposition": {
+                        "type": "boolean",
+                        "default": true
+                    },
+                    "Native" : @Native@,
+                    "selection": @Selector@,
+                    "superpositionSelection": @Selector@
+                }
+            },
+            {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "energy",
+                            "random"
+                        ],
+                        "required": true
+                    },
+                    "tag": {
+                        "type": "string"
+                    },
+                    "logIt": {
+                        "type": "boolean",
+                        "default": true
+                    }
+                }
+            },
+            {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "com_distance"
+                        ],
+                        "required": true
+                    },
+                    "tag": {
+                        "type": "string"
+                    },
+                    "logIt": {
+                        "type": "boolean",
+                        "default": true
+                    },
+                    "selection_group_1": @Selector@,
+                    "selection_group_2": @Selector@
+                }
+            },
+            {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "distanceToPoint"
+                        ],
+                        "required": true
+                    },
+                    "tag": {
+                        "type": "string"
+                    },
+                    "logIt": {
+                        "type": "boolean",
+                        "default": true
+                    },
+                    "point": {
+                        "type": "array",
+                        "required": true,
+                        "minItems": 3,
+                        "maxItems": 3,
+                        "items": {
+                            "type": "number"
+                        }
+                    },
+                    "atoms": @Selector@
+                }
+            },
+            {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "distanceToPoint"
+                        ],
+                        "required": true
+                    },
+                    "tag": {
+                        "type": "string"
+                    },
+                    "logIt": {
+                        "type": "boolean",
+                        "default": true
+                    },
+                    "boundPartSelection": @Selector@
+                }
+            },
+            {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "bindingEnergy"
+                        ],
+                        "required": true
+                    },
+                    "tag": {
+                        "type": "string"
+                    },
+                    "logIt": {
+                        "type": "boolean",
+                        "default": true
+                    },
+                    "boundPartSelection" : @Selector@
+                }
+            },
+            {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "sasa"
+                        ],
+                        "required": true
+                    },
+                    "tag": {
+                        "type": "string"
+                    },
+                    "logIt": {
+                        "type": "boolean",
+                        "default": true
+                    },
+                    "selection": @Selector@
+                }
+            }
+        ]
+    }
+}

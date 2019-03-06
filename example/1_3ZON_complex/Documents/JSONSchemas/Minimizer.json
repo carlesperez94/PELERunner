@@ -1,0 +1,49 @@
+{
+            "type" : "object",
+            "additionalProperties" : false,
+            "properties" : {
+                "algorithm" : {
+                    "type" : "string",
+                    "enum" : ["TruncatedNewton", "SteepestDescent", "ConjugatedGradient", "uniformForceBiasedMonteCarlo"],
+                    "default" : "TruncatedNewton"
+                },
+                "parameters" : {
+                    "type" : "object",
+                    "additionalProperties" : false,
+                    "properties" : {
+                        "EnergyDifference" : {
+                            "type" : "number"
+                        },
+                        "MinimumRMS" : {
+                            "type" : "number"
+                        },
+                        "MaximumMinimizationIterations": {
+                            "type" : "integer",
+                            "minimum" : 0
+                        },
+                        "MaximumNewtonIterations" : {
+                            "description" : "Parameter only valid for TruncatedNewton minimizer",
+                            "type" : "integer",
+                            "minimum" : 0
+                        },
+                        "nonBondingListUpdatedEachMinStep" : {
+                            "description" : "Parameter only valid for TruncatedNewton minimizer",
+                            "type" : "boolean"
+                        },
+                        "sgbUpdated" : {
+                            "description" : "Parameter only valid for TruncatedNewton minimizer",
+                            "type" : "boolean"
+                        },
+                        "alphaUpdated" : {
+                            "description" : "Parameter only valid for TruncatedNewton minimizer",
+                            "type" : "boolean"
+                        },
+                        "iterationsBetweenNBlistLongUpdate" : {
+                            "description" : "Parameter only valid for TruncatedNewton minimizer",
+                            "type" : "integer",
+                            "minimum" : 0
+                        }
+                    }
+                }
+            }
+        }

@@ -1,0 +1,70 @@
+{
+    "type": "array",
+    "items": {
+        "type": [
+            {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "constrainAtomToPosition"
+                        ],
+                        "required": true
+                    },
+                    "springConstant": {
+                        "type": "number",
+                        "required": true
+                    },
+                    "constrainThisAtom": {
+                        "type": "string",
+                        "required": true
+                    },
+                    "equilibriumDistance": {
+                        "type": "number",
+                        "required": true
+                    },
+                    "toThisPoint": {
+                        "type": "array",
+                        "minItems": 3,
+						"maxItems": 3,
+						"items": {
+							"type": "number"
+						},
+                        "required": false
+                    }
+                }
+            },
+            {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "constrainAtomsDistance"
+                        ],
+                        "required": true
+                    },
+                    "springConstant": {
+                        "type": "number",
+                        "required": true
+                    },
+                    "constrainThisAtom": {
+                        "type": "string",
+                        "required": true
+                    },
+                    "toThisOtherAtom": {
+                        "type": "string",
+                        "required": true
+                    },
+                    "equilibriumDistance": {
+                        "type": "number",
+                        "required": true
+                    }
+                }
+            }
+        ]
+    }
+}

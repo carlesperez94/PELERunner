@@ -1,0 +1,24 @@
+{
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+        "HydrogenBondsGenerationParameters": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "angleCutoff": {
+                    "type": "number",
+                    "default": 20
+                },
+                "bondCutoff": {
+                    "type": "number",
+                    "default": 3
+                },
+                "breakingLength": {
+                    "type": "number",
+                    "default": 3
+                }
+            }
+        }
+    }
+}

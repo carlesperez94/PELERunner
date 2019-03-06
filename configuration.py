@@ -25,8 +25,8 @@ else:  # If you run the program in another machine fill this parameters
 
 # Control file parameters to replace
 STEPS = 100
-RESULTS_PATH = ""
-CHAIN = "L"
+RESULTS_PATH = "simulation_results"
+CHAIN = "Z"
 TEMPERATURE = 1000
 OVERLAP = 0.7
 PROCESSORS = 48

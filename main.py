@@ -4,7 +4,7 @@ import shutil
 import subprocess
 import glob
 # Local imports
-import Helpers
+from Helpers import folder_handler, constraints, center_of_mass, templatize
 import configuration as c
 
 FilePath = os.path.abspath(__file__)
@@ -55,7 +55,7 @@ def control_file_modifier(control_template, pdb, license, overlap, results_path=
         shutil.copyfile(controlfile_path, control_template)
 
     # Modifying the control file template
-    Helpers.templatize.TemplateBuilder(control_template, keywords)
+    templatize.TemplateBuilder(control_template, keywords)
     # Make a copy in the control files folder
     print("{} has been created successfully!".format(control_template))
 
@@ -87,21 +87,26 @@ def simulation_runner(path_to_pele, control_in, cpus=4):
 
 
 def extract_ligand_of_template(in_pdb_file, out_path, lig_chain = "L"):
+    print(lig_chain)
     with open(in_pdb_file) as pdb:
         pdb_as_list = pdb.readlines()
     ligand_lines = []
     for line in pdb_as_list:
-        if line[21:22] == lig_chain and line[0:6].strip() == "HETATM":
-            resname = line[17:20]
+        if line[21:22] == lig_chain:
+            print(line)
             ligand_lines.append(line)
     try:
+        print(len(ligand_lines))
         ligand = "".join(ligand_lines)
     except:
         print("Ligand Chain empty. Check if the chain {} contains the ligand or not".format(lig_chain))
     if not os.path.exists(out_path):
         os.mkdir(out_path)
+    print(ligand)
+    resname = ligand[17:20]
     out_prefix = os.path.join(out_path, resname)
     out_pdb = "{}.pdb".format(out_prefix)
+    print(out_pdb)
     counter = 0
     while True:
         try:
@@ -128,31 +133,38 @@ def prepare_pele_simulation(pdb_complex, control_template, plop_path=c.PLOP_PATH
     # Path definition
     plop_relative_path = os.path.join(PackagePath, plop_path)
     # Creation of output folder
-    Helpers.folder_handler.check_and_create_DataLocal()
+    folder_handler.check_and_create_DataLocal()
     # Creating constraints
-    const = "\n".join(Helpers.constraints.retrieve_constraints(pdb_complex, {}, {}, 5, 5, 10))
+    const = "\n".join(constraints.retrieve_constraints(pdb_complex, {}, {}, 0.2, 0.2, 10))
     # Creating symbolic links
-    Helpers.folder_handler.create_symlinks(c.PATH_TO_PELE_DATA, 'Data')
-    Helpers.folder_handler.create_symlinks(c.PATH_TO_PELE_DOCUMENTS, 'Documents')
+    folder_handler.create_symlinks(c.PATH_TO_PELE_DATA, 'Data')
+    folder_handler.create_symlinks(c.PATH_TO_PELE_DOCUMENTS, 'Documents')
     # Creating templates
-    out_pdb = extract_ligand_of_template(in_pdb_file=pdb_complex, out_path=out_ligands)
+    out_pdb = extract_ligand_of_template(in_pdb_file=pdb_complex, out_path=out_ligands, lig_chain=chain)
     run_plop_from_pdb(sch_python=sch_python, plop_relative_path=plop_relative_path, pdb_file=out_pdb, py2_env=py2_env)
     # Control file preparation
-    center = Helpers.center_of_mass.center_of_mass(out_pdb)
-    control_file_modifier(control_template=control_template, pdb=pdb_complex, license=license_path, overlap=overlap,
+    center = center_of_mass.center_of_mass(out_pdb)
+    control_file_modifier(control_template=control_template, pdb=[pdb_complex], license=license_path, overlap=overlap,
                           results_path=results_folder, steps=pele_steps, chain=chain, constraints=const, center=center,
                           temperature=temp)
     # Creating results folder
-    Helpers.folder_handler.check_and_create_folder(results_folder)
+    folder_handler.check_and_create_folder(results_folder)
 
 
 def main(folder_to_analyze, control_template, plop_path=c.PLOP_PATH, out_ligands=c.PATH_OUTPUT_LIGANDS,
         sch_python=c.SCHRODINGER_PY_PATH, py2_env=c.PYTHON2_SCH_ENV, results_folder=c.RESULTS_PATH,
         license_path=c.LICENSE, overlap=c.OVERLAP, pele_steps=c.STEPS, chain=c.CHAIN,
         temp=c.TEMPERATURE):
-    pdbs_in_folder = glob.glob("{}.pdb".format(folder_to_analyze))
+    pdbs_in_folder = glob.glob("{}/*.pdb".format(folder_to_analyze))
     for pdb in pdbs_in_folder:
+        new_folder = os.path.join(folder_to_analyze, os.path.basename(pdb).split(".")[0])
+        if not os.path.exists(new_folder):
+             os.mkdir(new_folder)
+        os.chdir(new_folder)
         prepare_pele_simulation(pdb, control_template, plop_path=plop_path, out_ligands=out_ligands,
                                 sch_python=sch_python, py2_env=py2_env, results_folder=results_folder,
                                 license_path=license_path, overlap=overlap, pele_steps=pele_steps, chain=chain,
                                 temp=temp)
+
+
+main("/home/bsc72/bsc72292/projects/PELERunner/example", "/home/bsc72/bsc72292/projects/PELERunner/example/control_template.conf") 

@@ -1,0 +1,47 @@
+{
+    "type" : "object",
+    "additionalProperties": false,
+    "properties" : {
+        "algorithm" : {
+            "type" :  "string",
+            "enum" : ["zhexin", "boltzmannSampling"]
+        },
+        "sideChainMinimizer" : @Minimizer@,
+        "selectionToInclude" : @Selector@,
+        "selectionToOmit" : @Selector@,
+        "parameters" : {
+            "type" : "object",
+            "additionalProperties" : false,
+            "properties" : {
+                "resolution" : {
+                    "type" : "number"
+                },
+                "initialOverlapFactor" : {
+                    "type" : "number",
+                    "default" : 0.75
+                },
+                "minimalOverlapFactor" : {
+                    "type" : "number",
+                    "default" : 0.7
+                },
+                "temperature" : {
+                    "type" : "number",
+                    "default" : 1000
+                },
+                "numberOfIterations" : {
+                    "type" : "integer",
+                    "minimum" : 0,
+                    "default" : 2
+                },
+                "randomize" : {
+                    "type" : "boolean",
+                    "default" : true
+                },
+                "discardHighEnergySolutions" : {
+                    "type" : "boolean",
+                    "default" : true
+                }
+            }
+        }
+    }
+}

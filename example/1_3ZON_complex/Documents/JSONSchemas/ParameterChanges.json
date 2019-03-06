@@ -1,0 +1,26 @@
+{
+    "type": "array",
+    "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+            "ifAnyIsTrue": {
+                "required": true,
+                "type": "array",
+                "minItems": 1,
+                "items": [
+                    {
+                        "type": "string"
+                    }
+                ]
+            },
+            "doThesechanges": {
+                "required": true,
+                "type": "object"
+            },
+            "otherwise": {
+                "type": "object"
+            }
+        }
+    }
+}

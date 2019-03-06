@@ -1,0 +1,24 @@
+{
+    "type": "array",
+    "items": [
+        {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "variable": {
+                    "type": "string",
+                    "enum": [
+                        "currentEnergy",
+                        "stepsSinceLastAccepted",
+                        "numberOfAcceptedPeleSteps",
+                        "currentStep"
+                    ],
+                    "required": true
+                },
+                "logIt": {
+                    "type": "boolean"
+                }
+            }
+        }
+    ]
+}
