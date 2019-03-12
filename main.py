@@ -3,6 +3,7 @@ import os
 import shutil
 import subprocess
 import glob
+import argparse
 # Local imports
 from Helpers import folder_handler, constraints, center_of_mass, templatize
 import configuration as c
@@ -10,6 +11,25 @@ import configuration as c
 FilePath = os.path.abspath(__file__)
 PackagePath = os.path.dirname(FilePath)
 curr_dir = os.path.abspath(os.path.curdir)
+
+
+def parse_arguments():
+    """
+        Parse user arguments
+        Output: list with all the user arguments
+    """
+    parser = argparse.ArgumentParser(description="""Description: This program will prepare several folders of PELE ready
+    to run given several pdb complexes and templatized control files.
+    """)
+    parser.add_argument("folder_to_analyze", type=str,
+                        help="""Path to the folder that will be analyzed, it must contain all complexes in PDB 
+                        format.""")
+    parser.add_argument("control_template", type=str,
+                        help="""Path to the control file templatized.""")
+
+    args = parser.parse_args()
+
+    return args.folder_to_analyze, args.control_template
 
 
 def control_file_modifier(control_template, pdb, license, overlap, results_path="/growing_output", steps=100,
@@ -167,4 +187,7 @@ def main(folder_to_analyze, control_template, plop_path=c.PLOP_PATH, out_ligands
                                 temp=temp)
 
 
-main("/home/bsc72/bsc72292/projects/PELERunner/example", "/home/bsc72/bsc72292/projects/PELERunner/example/control_template.conf") 
+if __name__ == '__main__':
+    fol2analyze, cntr_temp = parse_arguments()
+    main(folder_to_analyze=fol2analyze, control_template=cntr_temp)
+
