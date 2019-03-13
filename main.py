@@ -26,6 +26,8 @@ def parse_arguments():
                         format.""")
     parser.add_argument("control_template", type=str,
                         help="""Path to the control file templatized.""")
+    parser.add_argument("--obc", type=bool, default=False,
+                        help="If it is set, OBC parameters will be computed")
 
     args = parser.parse_args()
 
@@ -106,27 +108,22 @@ def simulation_runner(path_to_pele, control_in, cpus=4):
         subprocess.call(cmd.split())
 
 
-def extract_ligand_of_template(in_pdb_file, out_path, lig_chain = "L"):
-    print(lig_chain)
+def extract_ligand_of_template(in_pdb_file, out_path, lig_chain="L"):
     with open(in_pdb_file) as pdb:
         pdb_as_list = pdb.readlines()
     ligand_lines = []
     for line in pdb_as_list:
         if line[21:22] == lig_chain:
-            print(line)
             ligand_lines.append(line)
     try:
-        print(len(ligand_lines))
         ligand = "".join(ligand_lines)
     except:
         print("Ligand Chain empty. Check if the chain {} contains the ligand or not".format(lig_chain))
     if not os.path.exists(out_path):
         os.mkdir(out_path)
-    print(ligand)
     resname = ligand[17:20]
     out_prefix = os.path.join(out_path, resname)
     out_pdb = "{}.pdb".format(out_prefix)
-    print(out_pdb)
     counter = 0
     while True:
         try:
@@ -146,7 +143,20 @@ def run_plop_from_pdb(sch_python, plop_relative_path, pdb_file, py2_env):
     subprocess.call(cmd.split(), env=new_env)
 
 
-def prepare_pele_simulation(pdb_complex, control_template, plop_path=c.PLOP_PATH, out_ligands=c.PATH_OUTPUT_LIGANDS,
+def prepare_obc_parameters(sch_python, obc_param_path, template_file, folder):
+    cmd = "{} {} {}".format(sch_python, obc_param_path, template_file)
+    subprocess.call(cmd.split())
+    obc_path_in_data = "Data/OBC/solventParamsHCTOBC.txt"
+    with open(obc_path_in_data) as obc_data:
+        obc = obc_data.read()
+    obc_template = "{}_OBCParams.txt".format(template_file)
+    with open(obc_template) as obc_tmpl:
+        obc_lig = obc_tmpl.read()
+    with open(os.path.join(folder,"DataLocal/OBC/solventParamsHCTOBC.txt"), "w") as final_obc:
+        final_obc.write(obc + obc_lig)
+
+
+def prepare_pele_simulation(pdb_complex, control_template, obc=False, plop_path=c.PLOP_PATH, out_ligands=c.PATH_OUTPUT_LIGANDS,
                            sch_python=c.SCHRODINGER_PY_PATH, py2_env=c.PYTHON2_SCH_ENV, results_folder=c.RESULTS_PATH,
                            license_path=c.LICENSE, overlap=c.OVERLAP, pele_steps=c.STEPS, chain=c.CHAIN,
                            temp=c.TEMPERATURE):
@@ -162,6 +172,9 @@ def prepare_pele_simulation(pdb_complex, control_template, plop_path=c.PLOP_PATH
     # Creating templates
     out_pdb = extract_ligand_of_template(in_pdb_file=pdb_complex, out_path=out_ligands, lig_chain=chain)
     run_plop_from_pdb(sch_python=sch_python, plop_relative_path=plop_relative_path, pdb_file=out_pdb, py2_env=py2_env)
+    if obc:
+        prepare_obc_parameters(sch_python, obc_param_path=c.OBC_PATH,
+                               template_file="DataLocal/Templates/OPLS2005/HeteroAtoms/*", folder=".")
     # Control file preparation
     center = center_of_mass.center_of_mass(out_pdb)
     control_file_modifier(control_template=control_template, pdb=[pdb_complex], license=license_path, overlap=overlap,
@@ -171,7 +184,7 @@ def prepare_pele_simulation(pdb_complex, control_template, plop_path=c.PLOP_PATH
     folder_handler.check_and_create_folder(results_folder)
 
 
-def main(folder_to_analyze, control_template, plop_path=c.PLOP_PATH, out_ligands=c.PATH_OUTPUT_LIGANDS,
+def main(folder_to_analyze, control_template, obc=False, plop_path=c.PLOP_PATH, out_ligands=c.PATH_OUTPUT_LIGANDS,
         sch_python=c.SCHRODINGER_PY_PATH, py2_env=c.PYTHON2_SCH_ENV, results_folder=c.RESULTS_PATH,
         license_path=c.LICENSE, overlap=c.OVERLAP, pele_steps=c.STEPS, chain=c.CHAIN,
         temp=c.TEMPERATURE):

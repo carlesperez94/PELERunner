@@ -17,6 +17,7 @@ def check_and_create_DataLocal():
     check_and_create_folder((os.path.join(curr_dir, "DataLocal")))
     check_and_create_folder((os.path.join(curr_dir, "DataLocal/LigandRotamerLibs")))
     check_and_create_folder((os.path.join(curr_dir, "DataLocal/Templates")))
+    check_and_create_folder((os.path.join(curr_dir, "DataLocal/OBC")))
     check_and_create_folder((os.path.join(curr_dir, "DataLocal/Templates/OPLS2005")))
     check_and_create_folder((os.path.join(curr_dir, "DataLocal/Templates/OPLS2005/HeteroAtoms")))
 

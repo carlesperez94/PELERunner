@@ -13,6 +13,7 @@ if "bsc.mn" in machine:
     # PlopRotTemp parameters
     SCHRODINGER_PY_PATH = "/gpfs/projects/bsc72/SCHRODINGER_ACADEMIC/utilities/python"
     PYTHON2_SCH_ENV = "/gpfs/projects/bsc72/SCHRODINGER_ACADEMIC/internal/lib/python2.7/site-packages/"
+    OBC_PATH = "/gpfs/projects/bsc72/PELE++/scripts/solventOBCParamsGenerator.py"
 else:  # If you run the program in another machine fill this parameters
     # PELE parameters
     PATH_TO_PELE = ""
@@ -21,13 +22,14 @@ else:  # If you run the program in another machine fill this parameters
     LICENSE = ""
     # PlopRotTemp parameters
     SCHRODINGER_PY_PATH = ""
+    OBC_PATH = ""
 
 
 # Control file parameters to replace
-STEPS = 100
+STEPS = 1000
 RESULTS_PATH = "simulation_results"
 CHAIN = "Z"
-TEMPERATURE = 1000
+TEMPERATURE = 1500
 OVERLAP = 0.7
 PROCESSORS = 48
 # PlopRotTemp configuration
