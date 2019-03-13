@@ -31,7 +31,7 @@ def parse_arguments():
 
     args = parser.parse_args()
 
-    return args.folder_to_analyze, args.control_template
+    return args.folder_to_analyze, args.control_template, args.obc
 
 
 def control_file_modifier(control_template, pdb, license, overlap, results_path="/growing_output", steps=100,
@@ -164,17 +164,18 @@ def prepare_pele_simulation(pdb_complex, control_template, obc=False, plop_path=
     plop_relative_path = os.path.join(PackagePath, plop_path)
     # Creation of output folder
     folder_handler.check_and_create_DataLocal()
-    # Creating constraints
-    const = "\n".join(constraints.retrieve_constraints(pdb_complex, {}, {}, 0.2, 0.2, 10))
     # Creating symbolic links
     folder_handler.create_symlinks(c.PATH_TO_PELE_DATA, 'Data')
     folder_handler.create_symlinks(c.PATH_TO_PELE_DOCUMENTS, 'Documents')
+    # Creating constraints
+    const = "\n".join(constraints.retrieve_constraints(pdb_complex, {}, {}, 0.2, 0.2, 10))
     # Creating templates
     out_pdb = extract_ligand_of_template(in_pdb_file=pdb_complex, out_path=out_ligands, lig_chain=chain)
+    template_name = out_pdb.split("/")[-1].split(".pdb")[0].lower()+"z"
     run_plop_from_pdb(sch_python=sch_python, plop_relative_path=plop_relative_path, pdb_file=out_pdb, py2_env=py2_env)
     if obc:
         prepare_obc_parameters(sch_python, obc_param_path=c.OBC_PATH,
-                               template_file="DataLocal/Templates/OPLS2005/HeteroAtoms/*", folder=".")
+                               template_file="DataLocal/Templates/OPLS2005/HeteroAtoms/{}".format(template_name), folder=".")
     # Control file preparation
     center = center_of_mass.center_of_mass(out_pdb)
     control_file_modifier(control_template=control_template, pdb=[pdb_complex], license=license_path, overlap=overlap,
@@ -194,13 +195,13 @@ def main(folder_to_analyze, control_template, obc=False, plop_path=c.PLOP_PATH, 
         if not os.path.exists(new_folder):
              os.mkdir(new_folder)
         os.chdir(new_folder)
-        prepare_pele_simulation(pdb, control_template, plop_path=plop_path, out_ligands=out_ligands,
+        prepare_pele_simulation(pdb, control_template, obc, plop_path=plop_path, out_ligands=out_ligands,
                                 sch_python=sch_python, py2_env=py2_env, results_folder=results_folder,
                                 license_path=license_path, overlap=overlap, pele_steps=pele_steps, chain=chain,
                                 temp=temp)
 
 
 if __name__ == '__main__':
-    fol2analyze, cntr_temp = parse_arguments()
-    main(folder_to_analyze=fol2analyze, control_template=cntr_temp)
+    fol2analyze, cntr_temp, obc = parse_arguments()
+    main(folder_to_analyze=fol2analyze, control_template=cntr_temp, obc=obc)
 
