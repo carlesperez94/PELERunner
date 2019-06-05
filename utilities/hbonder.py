@@ -2,13 +2,12 @@ import os
 import sys
 import argparse
 import traceback
-
+import glob
 import pandas as pd
 import mdtraj as md
 import numpy as np
 import multiprocessing as mp
 import md_traj_h_bond_modified as mdm
-
 
 
 def extract_single_model_from_structure(trajectory_file_path, topology_file_path, model_number):
@@ -28,9 +27,9 @@ def select_residue(trajectory_object, residue):
 
 
 def get_residues_given_dictionary(trajectory_object, residues_dictionary):
-    residues = residues_dictionary.keys()
+    residues = residues_dictionary.items()
     results = []
-    for residue in residues:
+    for residue, name in residues:
         selected_residue = select_residue(trajectory_object, residue)
         results.append(selected_residue)
     return results
@@ -57,36 +56,72 @@ def hunt_h_bonds_of_model(trajectory, cutoff=0.25):
 def select_specific_h_bond_with_ligand(trajectory, residues_dict, lig_resname="LIG", cutoff=0.25):
     ligand = select_ligand(trajectory, lig_resname)
     residues_list = get_residues_given_dictionary(trajectory, residues_dict)
-    residues_list = [j for i in residues_list for j in i]
-    total_selection = np.concatenate([ligand, residues_list])
+    residues_list = [j for i in residues_list for j in i]  # Delete arrays and join them
+    total_selection = np.concatenate([residues_list, ligand])
+    total_selection.sort()  # Sorting is important, otherwise the structure is aberrant
     subset_selected = trajectory.atom_slice(total_selection)
-    total_selection = sorted(total_selection)
+    subset_selected.save_pdb("/home/carlespl/project/Almirall/selection.pdb")
     h_bonds = hunt_h_bonds_of_model(subset_selected, cutoff)
-    ligand_residue = trajectory.topology.atom(ligand[0]).residue
+    total_selection_reindexed = {n: i for n, i in enumerate(total_selection)}
     h_bonds_with_ligand = []
     for hbond in h_bonds:
-        h_b = [total_selection[x] for x in hbond]
-        donor_id, hydrogen_id, acceptor_id = h_b
-        residue_donor = trajectory.topology.atom(donor_id)
-        residue_acceptor = trajectory.topology.atom(acceptor_id)
-        if donor_id in ligand:
-            ligand_atom = residue_donor.name
-            residue_acceptor_resseq = residue_acceptor.residue.resSeq
-            if (residue_acceptor.name == residues_dict[residue_acceptor_resseq]) and (
-                residue_acceptor_resseq in residues_dict.keys()):
-                residue_to_bond = residue_acceptor
-                print(ligand_atom, residue_to_bond)
-        if acceptor_id in ligand:
-            ligand_atom = residue_acceptor.name
-            residue_donor_resseq = residue_donor.residue.resSeq
-            if (residue_donor.name == residues_dict[residue_donor_resseq]) and (
-                residue_donor_resseq in residues_dict.keys()):
-                residue_to_bond = residue_donor
-                print(ligand_atom, residue_to_bond)
-        try:
-            h_bonds_with_ligand.append((ligand_atom, residue_to_bond))
-        except:
-            traceback.print_exc()
+        donor = hbond[0]
+        acceptor = hbond[2]
+        donor_name = trajectory.topology.atom(total_selection_reindexed[donor]).name
+        acceptor_name = trajectory.topology.atom(total_selection_reindexed[acceptor]).name
+        donor_seq = trajectory.topology.atom(total_selection_reindexed[donor]).residue.resSeq
+        acceptor_seq = trajectory.topology.atom(total_selection_reindexed[acceptor]).residue.resSeq
+        if total_selection_reindexed[donor] in ligand or total_selection_reindexed[acceptor] in ligand:
+            # Residue = acceptor, ligand = donor
+            if acceptor_seq in residues_dict.keys():
+                if acceptor_name in residues_dict[acceptor_seq]:
+                    hbond_to_save = [(trajectory.topology.atom(total_selection_reindexed[acceptor]).residue.resSeq,
+                                     trajectory.topology.atom(total_selection_reindexed[acceptor]).residue.name,
+                                     acceptor_name),
+                                     (trajectory.topology.atom(total_selection_reindexed[donor]).residue.resSeq,
+                                     trajectory.topology.atom(total_selection_reindexed[donor]).residue.name,
+                                     donor_name)]
+
+                    print("The acceptor is the residue {}{} {}".format(trajectory.topology.atom(
+                          total_selection_reindexed[acceptor]).residue.resSeq,
+                                                                       trajectory.topology.atom(
+                                                                           total_selection_reindexed[
+                                                                               acceptor]).residue.name,
+                                                                       trajectory.topology.atom(
+                                                                           total_selection_reindexed[acceptor]).element))
+                    print("The donor is the ligand {}{} {}{}".format(trajectory.topology.atom(
+                        total_selection_reindexed[donor]).residue.resSeq,
+                                                                     trajectory.topology.atom(
+                                                                         total_selection_reindexed[donor]).residue.name,
+                                                                     trajectory.topology.atom(
+                                                                         total_selection_reindexed[donor]).element,
+                                                                     trajectory.topology.atom(
+                                                                         total_selection_reindexed[donor]).name))
+                    h_bonds_with_ligand.append(hbond_to_save)
+            if donor_seq in residues_dict.keys():
+                if donor_name in residues_dict[donor_seq]:
+                    hbond_to_save = [(trajectory.topology.atom(total_selection_reindexed[donor]).residue.resSeq,
+                                      trajectory.topology.atom(total_selection_reindexed[donor]).residue.name,
+                                      donor_name),
+                                      (trajectory.topology.atom(total_selection_reindexed[acceptor]).residue.resSeq,
+                                      trajectory.topology.atom(total_selection_reindexed[acceptor]).residue.name,
+                                      acceptor_name)]
+                    print("The donor is the residue atom {}{} {}".format(trajectory.topology.atom(
+                        total_selection_reindexed[donor]).residue.resSeq,
+                                                                         trajectory.topology.atom(
+                                                                             total_selection_reindexed[donor]).residue.name,
+                                                                         trajectory.topology.atom(
+                                                                             total_selection_reindexed[donor]).element))
+                    print("The acceptor is the ligand {}{} {}{}".format(trajectory.topology.atom(
+                        total_selection_reindexed[acceptor]).residue.resSeq,
+                                                                        trajectory.topology.atom(
+                                                                            total_selection_reindexed[
+                                                                                acceptor]).residue.name,
+                                                                        trajectory.topology.atom(
+                                                                            total_selection_reindexed[acceptor]).element,
+                                                                        trajectory.topology.atom(
+                                                                            total_selection_reindexed[acceptor]).name))
+                    h_bonds_with_ligand.append(hbond_to_save)
 
     return h_bonds_with_ligand
 
@@ -102,7 +137,8 @@ def get_bonds_from_row_in_csv(row, residues_dictionary, cutoff=0.25, lig_resname
     return result
 
 
-def load_trajectories_of_csvs(csv_file, residues_dictionary, output_folder, lig_resname="LIG", cutoff=0.25, file_column="file_from", separator=";", path_to_topology="topology.pdb"):
+def load_trajectories_of_csvs(csv_file, residues_dictionary, output_folder, lig_resname="LIG", cutoff=0.25,
+                              file_column="file_from", separator=";", path_to_topology="topology.pdb"):
     dataframe = pd.read_csv(csv_file, sep=separator)
     pool = mp.Pool(processes=4)
     hbonds_results = []
@@ -128,6 +164,44 @@ def load_trajectories_of_csvs(csv_file, residues_dictionary, output_folder, lig_
         os.mkdir(output_folder)
     dataframe.to_csv(os.path.join(output_folder, os.path.basename(csv_file)), sep=separator)
     return print("FINISHED SUCCESSFULLY")
+
+
+def check_bonds_of_folder(folder_to_analyze, residues_dictionary, lig_resname="LIG", cutoff=0.27, processors=4):
+    pool = mp.Pool(processes=processors)
+    hbonds = []
+    trajectories = glob.glob("{}/*.xtc".format(folder_to_analyze))
+    for trajectory in trajectories:
+        topology_path_splited = trajectory.split("/")[0:-2]
+        topology_path = os.path.join("/".join(topology_path_splited), "topology.pdb")
+        traj = md.load(trajectory, top=topology_path)
+        multi = []
+        for n, model in enumerate(traj):
+            multi.append(pool.apply_async(select_specific_h_bond_with_ligand,((model, residues_dictionary, lig_resname, cutoff))))
+        for n, process in enumerate(multi):
+            hbonds_lig = process.get()
+            hbonds.append([trajectory, n, hbonds_lig])
+            print(trajectory, n, len(hbonds_lig))
+    return hbonds
+
+trajectory_path = "/home/carlespl/project/Almirall/validation_compounds/simulation_results_with_exp_data/73_wo14670_13/obc_adaptive_output_conf_11/0/73_wo14670_13_trajectory_1.xtc"
+topology_path = "/home/carlespl/project/Almirall/validation_compounds/simulation_results_with_exp_data/73_wo14670_13/obc_adaptive_output_conf_11/topology.pdb"
+traj = md.load(trajectory_path, top=topology_path)
+for model in traj[0]:
+    print(model)
+    select_specific_h_bond_with_ligand(model, residues_dict={688: ["O"], 690: ["N", "O"]}, cutoff=0.27)
+
+#dataframe = pd.DataFrame(columns=["trajectory_file", "model", "hbonds"])
+#paths = glob.glob("/home/carlespl/project/Almirall/validation_compounds/simulation_results_with_exp_data/73_wo14670_13/obc_adaptive_output_conf_11/[0-9]*")
+#for path in paths:
+#    results = check_bonds_of_folder(path, residues_dictionary={688: ["O"], 690: ["N", "O"]})
+#    for hbond in results:
+#        trajectory, model, hbonds = hbond
+#        amount_hbonds = len(hbonds)
+#        df = pd.DataFrame([[trajectory, model, amount_hbonds]], columns=["trajectory_file", "model", "hbonds"])
+#        dataframe = pd.concat([dataframe, df])
+#        print(dataframe)
+#dataframe.to_csv("/home/carlespl/project/Almirall/csv_testing.csv")
+
 
 #load_trajectories_of_csvs("/home/carlespl/project/Almirall/validation_compounds/"
 #                          "testing_smalldataset.csv",

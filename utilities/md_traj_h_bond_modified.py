@@ -143,7 +143,7 @@ def wernet_nilsson(traj, exclude_water=True, periodic=True, sidechain_only=False
     return [bond_triplets.compress(present, axis=0) for present in presence]
 
 
-def baker_hubbard(traj, cutoff=0.25, freq=0.1, exclude_water=True, periodic=True, sidechain_only=False):
+def baker_hubbard(traj, cutoff=0.25, freq=0.0, exclude_water=True, periodic=True, sidechain_only=False):
     """Identify hydrogen bonds based on cutoffs for the Donor-H...Acceptor
     distance and angle.
 
@@ -237,6 +237,8 @@ def baker_hubbard(traj, cutoff=0.25, freq=0.1, exclude_water=True, periodic=True
 
     # Find triplets that meet the criteria
     presence = np.logical_and(distances < distance_cutoff, angles > angle_cutoff)
+    print(bond_triplets)
+    print(angles)
     mask[mask] = np.mean(presence, axis=0) > freq
 
     return bond_triplets.compress(mask, axis=0)

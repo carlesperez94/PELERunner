@@ -135,7 +135,6 @@ def extract_ligand_of_template(in_pdb_file, out_path, lig_chain="L"):
             out_pdb = out_prefix + "_" + str(counter) + ".pdb"
     return out_pdb
 
-
 def run_plop_from_pdb(sch_python, plop_relative_path, pdb_file, py2_env):
     cmd = "{} {} {}".format(sch_python, plop_relative_path, pdb_file)
     new_env = os.environ.copy()
