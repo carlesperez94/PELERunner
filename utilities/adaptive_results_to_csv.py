@@ -2,6 +2,7 @@ import os
 import sys
 import glob
 import argparse
+import traceback
 import pandas as pd
 import variables as vrb
 import multiprocessing as mp
@@ -126,8 +127,10 @@ def concat_reports_in_csv(adaptive_results_path, output_file_path, report_prefix
             for n, report in enumerate(report_list):
                 pandas_df = pd.read_csv(report, sep="    ", engine="python", index_col=False, header=0)
                 pandas_df["epoch"] = adaptive_epoch
-                pandas_df["file_from"] = glob.glob("{}/{}/*{}{}.*".format(adaptive_results_path, adaptive_epoch,
-                                                                          trajectory_prefix, n + 1))[0]
+                pandas_df["file_from"] = os.path.abspath(glob.glob("{}/{}/*{}{}.*".format(adaptive_results_path,
+                                                                                          adaptive_epoch,
+                                                                                          trajectory_prefix,
+                                                                                          n + 1))[0])
                 dataframe_lists.append(pandas_df)
         else:
             break
@@ -141,15 +144,22 @@ def main(simulations_path, output_file_path, report_prefix="report_", trajectory
     if not os.path.exists(output_file_path):
         os.mkdir(output_file_path)
     for path in path_list:
-        path_to_result = glob.glob("{}/{}".format(path, path_to_adaptive_results))[0]
-        print("Analysing {}".format(path_to_result))
-        output_name = os.path.join(output_file_path, "{}_adaptive_results_summary.csv".format(os.path.basename(path)))
-        concat_reports_in_csv(path_to_result, output_name, report_prefix, trajectory_prefix)
-        print("Results saved in {}".format(output_name))
-        if extract_pdbs:
-            df = pd.read_csv(output_name, sep=";")
-            get_pdbs_from_df_in_xtc(df, output_file_path, column_file="file_from",
-                                    processors=4)
+        try:
+            path_to_result = glob.glob("{}/{}".format(path, path_to_adaptive_results))[0]
+            print("Analysing {}".format(path_to_result))
+            id_path = path_to_result.split("/")[-2]
+            output_name = os.path.join(output_file_path, "{}_adaptive_results_summary.csv".format(os.path.basename(path)))
+            concat_reports_in_csv(path_to_result, output_name, report_prefix, trajectory_prefix)
+            print("Results saved in {}".format(output_name))
+            if extract_pdbs:
+                df = pd.read_csv(output_name, sep=";")
+                new_path = os.path.join(output_file_path, id_path)
+                os.mkdir(new_path)
+                get_pdbs_from_df_in_xtc(df, new_path, column_file="file_from",
+                                        processors=4)
+        except:
+            print("ERROR in {}".format(path))
+            traceback.print_exc()
     return print("Finished successfully!")
 
 

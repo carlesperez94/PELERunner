@@ -2,12 +2,45 @@ import glob
 import multiprocessing as mp
 import os
 import traceback
+import argparse
 
 import mdtraj as md
 import prody
 import numpy as np
 import pandas as pd
 from xtc_to_pdb import trajectory_and_snapshot_to_pdb
+
+
+def parse_arguments():
+    """
+            Parse user arguments
+
+            Output: list with all the user arguments
+        """
+    # All the docstrings are very provisional and some of them are old, they would be changed in further steps!!
+    parser = argparse.ArgumentParser(description="""This program counts hbonds for AdaptivePELE simulations.""")
+    required_named = parser.add_argument_group('required named arguments')
+    # Growing related arguments
+    required_named.add_argument("folder_to_analyze",
+                                help="""Path/pattern to the folder that to the simulations results that you want to
+                                analyse.""")
+    parser.add_argument("-t", "--traj_prefix", default="*trajectory_*",
+                                help="""Trajectory name pattern.""")
+    parser.add_argument("-l","--ligand_resname", default="LIG",
+                                help="""PDB residue name of the ligand.""")
+    parser.add_argument("-ht","--hbond_cutoff", default=0.27,
+                                help="""Hbond distance threshold (nm).""")
+    parser.add_argument("-a", "--angle_cutoff", default=130,
+                        help="""Angle threshold (degrees).""")
+    parser.add_argument("-p", "--processors", default=4,
+                        help="""Number of processors to use.""")
+    parser.add_argument("-o", "--output_path", default=None,
+                        help="""Name of the output path. By default:'hbond_analysis.csv'.""")
+
+    args = parser.parse_args()
+
+    return args.folder_to_analyze, args.traj_prefix, args.ligand_resname, args.hbond_cutoff, args.angle_cutoff, \
+           args.processors, args.output_path
 
 
 def select_ligand(pdb, ligand_chain="L"):
@@ -223,7 +256,7 @@ def get_hbonds_from_xtc(trajectory_path, ligand_resname="LIG", hbond_cutoff=0.27
                                                                trajectory.topology.atom(acceptor)))
                         hbonds.append([trajectory.topology.atom(donor), trajectory.topology.atom(acceptor)])
         hbond_info = ["{}_{}".format(donor, acceptor) for donor, acceptor in hbonds]
-        data = pd.DataFrame({"trajectory": trajectory_path, "model": n, "hbonds": hbond_info})
+        data = pd.DataFrame({"trajectory": os.path.abspath(trajectory_path), "model": n, "hbonds": hbond_info})
         results.append(data)
 
     return results
@@ -266,8 +299,8 @@ def get_hbonds_from_trajectory_file(trajectory, lig_chain="L", residues_cutoff=3
     return hbonds
 
 
-def main(simulation_results_path, traj_prefix="*trajectory_*.xtc", ligand_resname="LIG",
-         hbond_cutoff=0.27, angle_cutoff=130, processors=4, output_path=None):
+def detect_hbonds(simulation_results_path, traj_prefix="*trajectory_*.xtc", ligand_resname="LIG",
+                  hbond_cutoff=0.27, angle_cutoff=130, processors=4, output_path=None):
     paths_to_analyze = glob.glob("{}/[0-9]*/{}".format(simulation_results_path, traj_prefix))
     results = []
     pool = mp.Pool(processors)
@@ -284,10 +317,22 @@ def main(simulation_results_path, traj_prefix="*trajectory_*.xtc", ligand_resnam
     else:
         final_df.to_csv(output_path, index=False)
 
-folder_list = glob.glob("/home/carlespl/project/Almirall/validation_compounds/simulation_results_with_exp_data/*/obc_adaptive*")
-for folder in folder_list:
-    print(folder)
-    try:
-        main(folder, ligand_resname="LIG")
-    except Exception:
-        traceback.print_exc()
+
+def main(dir_to_analyze, traj_prefix="*trajectory_*.xtc", ligand_resname="LIG",
+         hbond_cutoff=0.27, angle_cutoff=130, processors=4, output_path=None):
+
+    folder_list = glob.glob(dir_to_analyze)
+    for folder in folder_list:
+        print(folder)
+        try:
+            detect_hbonds(folder, traj_prefix=traj_prefix, ligand_resname=ligand_resname, hbond_cutoff=hbond_cutoff,
+                          angle_cutoff=angle_cutoff, processors=processors, output_path=output_path)
+        except Exception:
+            traceback.print_exc()
+
+
+if __name__ == '__main__':
+    folder_to_analyze, traj_prefix, ligand_resname, hbond_cutoff, angle_cutoff, processors, \
+    output_path = parse_arguments()
+    main(folder_to_analyze, traj_prefix, ligand_resname, hbond_cutoff, angle_cutoff, processors, output_path)
+

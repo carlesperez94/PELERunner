@@ -1,8 +1,12 @@
 import os
+import sys
 from schrodinger import structure as st
-import main as plop
 import subprocess
 import argparse
+# Local import
+frag_pele_dirname = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+sys.path.append(frag_pele_dirname)
+import PELERunner.PlopRotTemp_S_2017.main as plop
 
 
 def convert_mae(ligands):
@@ -28,17 +32,22 @@ def convert_mae(ligands):
             structure.write(structure_mae)
     return structure_mae
 
-def create_template(pdb):
+
+def create_template(pdb, gridres):
    mae_file = convert_mae(pdb)
-   plop.main(mae_file, out_temp="DataLocal/Templates/OPLS2005/HeteroAtoms", out_rot="DataLocal/LigandRotamerLibs/")
+   plop.main(mae_file, out_temp="DataLocal/Templates/OPLS2005/HeteroAtoms/", out_rot="DataLocal/LigandRotamerLibs/",
+             gridres=gridres)
    os.remove(mae_file)
+
 
 def arg_parse():
   parser = argparse.ArgumentParser()
   parser.add_argument("pdb", type=str, help="ligand file to templatize")
+  parser.add_argument("gridres", type=str, help="Degrees of rotation.")
   args = parser.parse_args()
-  return args.pdb
+  return args.pdb, args.gridres
+
 
 if __name__ == '__main__':
-	pdb = arg_parse()
-	create_template(pdb)
+    pdb, gridres = arg_parse()
+    create_template(pdb, gridres)

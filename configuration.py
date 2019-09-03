@@ -12,7 +12,7 @@ if "bsc.mn" in machine:
     LICENSE = "/gpfs/projects/bsc72/PELE++/license"
     # PlopRotTemp parameters
     SCHRODINGER_PY_PATH = "/gpfs/projects/bsc72/SCHRODINGER_ACADEMIC/utilities/python"
-    PYTHON2_SCH_ENV = "/gpfs/projects/bsc72/SCHRODINGER_ACADEMIC/internal/lib/python2.7/site-packages/"
+    PYTHON2_SCH_ENV = "/gpfs/projects/bsc72/SCHRODINGER_ACADEMIC/internal/lib/python2.7/site-packages/:/home/bsc72/bsc72292/projects/PELERunner/PELERunner"
     OBC_PATH = "/gpfs/projects/bsc72/PELE++/scripts/solventOBCParamsGenerator.py"
 else:  # If you run the program in another machine fill this parameters
     # PELE parameters
@@ -28,7 +28,7 @@ else:  # If you run the program in another machine fill this parameters
 # Control file parameters to replace
 STEPS = 1000
 RESULTS_PATH = "simulation_results"
-CHAIN = "Z"
+CHAIN = "L"
 TEMPERATURE = 1500
 OVERLAP = 0.7
 PROCESSORS = 48

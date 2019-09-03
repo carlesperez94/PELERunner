@@ -16,6 +16,49 @@ from Helpers.structure_handler import select_atom_pair_from_ligand_and_residue
 from Helpers.dataframe_handler import add_column_to_dataframe
 
 
+def parse_arguments():
+    """
+            Parse user arguments
+
+            Output: list with all the user arguments
+        """
+    # All the docstrings are very provisional and some of them are old, they would be changed in further steps!!
+    parser = argparse.ArgumentParser(description="""This program compute atom atom distances
+                                     for AdaptivePELE simulations.""")
+    required_named = parser.add_argument_group('required named arguments')
+    # Growing related arguments
+    required_named.add_argument("-csv_file",
+                                help="""""")
+    required_named.add_argument("-path_to_simulations",
+                                help="""""")
+    required_named.add_argument("-resid",
+                                help="""""")
+    required_named.add_argument("-atom_residue",
+                                help="""""")
+    required_named.add_argument("-atom_ligand",
+                                help="""""")
+    parser.add_argument("-cn", "--column_name", default="distance",
+                                help="""""")
+    parser.add_argument("-p2c", "--path_to_clusters", default=vrb.PATH_PATTER_TO_CLUSTERS_FROM_SIMS,
+                        help="""""")
+    parser.add_argument("-lr","--ligand_resname", default="LIG",
+                                help="""""")
+    parser.add_argument("-fc","--file_column", default="file_from",
+                                help="""""")
+    parser.add_argument("-s", "--separator", default=";",
+                        help=""".""")
+    parser.add_argument("-lc", "--ligand_chain", default="L",
+                        help="""""")
+    parser.add_argument("-xtc", "--read_xtc", default=False,
+                        help="""""")
+
+    args = parser.parse_args()
+
+    return args.csv_file, args.path_to_simulations, args.resid, args.atom_residue, args.atom_ligand, args.column_name, \
+           args.path_to_clusters, args.file_column, args.separator, args.ligand_chain, args.ligand_resname, \
+           args.read_xtc
+
+
 def calculate_distance_of_to_atoms(atom1, atom2):
     coords_atom1 = atom1.getCoords()
     coords_atom2 = atom2.getCoords()
@@ -50,9 +93,9 @@ def compute_distances_mdtraj_from_file(file_path, resid, name_residue, name_liga
     return distances
 
 
-def main(csv_file, path_to_simulations, resid, name_residue, name_ligand, output_filepath,
-         column_name="distance_recomputed", path_to_clusters=vrb.PATH_PATTER_TO_CLUSTERS_FROM_SIMS, file_column="file_from",
-         separator=";", ligand_chain="Z", ligand_resname="LIG", read_xtc=False):
+def main(csv_file, path_to_simulations, resid, name_residue, name_ligand, column_name="distance",
+         path_to_clusters=vrb.PATH_PATTER_TO_CLUSTERS_FROM_SIMS, file_column="file_from", separator=";",
+         ligand_chain="Z", ligand_resname="LIG", read_xtc=False):
     files_to_analyze = open_structure_from_dataframe(csv_file=csv_file, path_to_simulations=path_to_simulations,
                                                      path_to_clusters=path_to_clusters, file_column=file_column,
                                                      separator=separator, read_xtc=read_xtc)
@@ -70,5 +113,12 @@ def main(csv_file, path_to_simulations, resid, name_residue, name_ligand, output
         distances_list.extend(process.get())
     dataframe = pd.read_csv(csv_file, sep=separator)
     add_column_to_dataframe(distances_list, column_name, dataframe)
-    dataframe.to_csv(output_filepath, sep=separator, index=False)
+    dataframe.to_csv(os.path.splitext(csv_file)[0] + "recomputed.csv", sep=separator, index=False)
     return dataframe
+
+
+if __name__ == '__main__':
+    csv_file, path_to_simulations, resid, atom_residue, atom_ligand, column_name, path_to_clusters, file_column, \
+    separator, ligand_chain, ligand_resname, read_xtc = parse_arguments()
+    main(csv_file, path_to_simulations, resid, atom_residue, atom_ligand, column_name, path_to_clusters, file_column,
+         separator, ligand_chain, ligand_resname, read_xtc)

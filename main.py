@@ -5,8 +5,9 @@ import subprocess
 import glob
 import argparse
 # Local imports
-from Helpers import folder_handler, constraints, center_of_mass, templatize
+from Helpers import folder_handler, constraints, center_of_mass, templatize, replace_ligand
 import configuration as c
+import ScreenerPrepare.configuration as screenconf
 
 FilePath = os.path.abspath(__file__)
 PackagePath = os.path.dirname(FilePath)
@@ -22,8 +23,11 @@ def parse_arguments():
     to run given several pdb complexes and templatized control files.
     """)
     parser.add_argument("folder_to_analyze", type=str,
-                        help="""Path to the folder that will be analyzed, it must contain all complexes in PDB 
+                        help="""Path to the folder that will be analyzed, it must contain all ligands in PDB 
                         format.""")
+    parser.add_argument("pdb_complex", type=str,
+                        help="PDB file with the protein-ligand complex. The protein will be kept and the ligand will"
+                             "be replaced by the ligands in the folder to analyze.")
     parser.add_argument("control_template", type=str,
                         help="""Path to the control file templatized.""")
     parser.add_argument("--obc", type=bool, default=False,
@@ -31,11 +35,13 @@ def parse_arguments():
 
     args = parser.parse_args()
 
-    return args.folder_to_analyze, args.control_template, args.obc
+    return args.folder_to_analyze, args.pdb_complex, args.control_template, args.obc
 
 
 def control_file_modifier(control_template, pdb, license, overlap, results_path="/growing_output", steps=100,
-                          chain="L", constraints=" ", center="", temperature=1000):
+                          chain="L", constraints=" ", center="", temperature=1000, radius=screenconf.RADIUS, 
+                          ligand_resnum=1, chain_1="", chain_2="", atom_1="", atom_2="", resnum_1="", resnum_2="",
+                          native=""):
     """
     This function creates n control files for each intermediate template created in order to change
     the logPath, reportPath and trajectoryPath to have all control files prepared for PELE simulations.
@@ -62,6 +68,15 @@ def control_file_modifier(control_template, pdb, license, overlap, results_path=
                 "STEPS": steps,
                 "OVERLAP": overlap,
                 "TEMPERATURE": temperature,
+                "RADIUS": radius,
+                "RESNUM": ligand_resnum, 
+                "CHAIN_1": chain_1,
+                "CHAIN_2": chain_2,
+                "ATOM_1": atom_1,
+                "ATOM_2": atom_2,
+                "RESNUM_1": resnum_1,
+                "RESNUM_2": resnum_2,
+                "NATIVE": native
                 }
     # Creation of a folder where we are going to contain our control files, just if needed
     if not os.path.exists(ctrl_fold_name):
@@ -119,6 +134,7 @@ def extract_ligand_of_template(in_pdb_file, out_path, lig_chain="L"):
         ligand = "".join(ligand_lines)
     except:
         print("Ligand Chain empty. Check if the chain {} contains the ligand or not".format(lig_chain))
+    print(ligand)
     if not os.path.exists(out_path):
         os.mkdir(out_path)
     resname = ligand[17:20]
@@ -135,8 +151,9 @@ def extract_ligand_of_template(in_pdb_file, out_path, lig_chain="L"):
             out_pdb = out_prefix + "_" + str(counter) + ".pdb"
     return out_pdb
 
-def run_plop_from_pdb(sch_python, plop_relative_path, pdb_file, py2_env):
-    cmd = "{} {} {}".format(sch_python, plop_relative_path, pdb_file)
+
+def run_plop_from_pdb(sch_python, plop_relative_path, pdb_file, py2_env, grid_size="10.0"):
+    cmd = "{} {} {} {}".format(sch_python, plop_relative_path, pdb_file, grid_size)
     new_env = os.environ.copy()
     new_env["PYTHONPATH"] = py2_env
     subprocess.call(cmd.split(), env=new_env)
@@ -151,14 +168,15 @@ def prepare_obc_parameters(sch_python, obc_param_path, template_file, folder):
     obc_template = "{}_OBCParams.txt".format(template_file)
     with open(obc_template) as obc_tmpl:
         obc_lig = obc_tmpl.read()
-    with open(os.path.join(folder,"DataLocal/OBC/solventParamsHCTOBC.txt"), "w") as final_obc:
+    with open(os.path.join(folder, "DataLocal/OBC/solventParamsHCTOBC.txt"), "w") as final_obc:
         final_obc.write(obc + obc_lig)
 
 
 def prepare_pele_simulation(pdb_complex, control_template, obc=False, plop_path=c.PLOP_PATH, out_ligands=c.PATH_OUTPUT_LIGANDS,
                            sch_python=c.SCHRODINGER_PY_PATH, py2_env=c.PYTHON2_SCH_ENV, results_folder=c.RESULTS_PATH,
                            license_path=c.LICENSE, overlap=c.OVERLAP, pele_steps=c.STEPS, chain=c.CHAIN,
-                           temp=c.TEMPERATURE):
+                           temp=c.TEMPERATURE, resnum="", chain_1="", chain_2="", resnum_1="", resnum_2="", 
+                           atom_1="", atom_2=""):
     # Path definition
     plop_relative_path = os.path.join(PackagePath, plop_path)
     # Creation of output folder
@@ -179,28 +197,36 @@ def prepare_pele_simulation(pdb_complex, control_template, obc=False, plop_path=
     center = center_of_mass.center_of_mass(out_pdb)
     control_file_modifier(control_template=control_template, pdb=[pdb_complex], license=license_path, overlap=overlap,
                           results_path=results_folder, steps=pele_steps, chain=chain, constraints=const, center=center,
-                          temperature=temp)
+                          temperature=temp, ligand_resnum=resnum, chain_1=chain_1, chain_2=chain_2, resnum_1=resnum_1, 
+                          resnum_2=resnum_2, atom_1=atom_1, atom_2=atom_2, native=pdb_complex)
     # Creating results folder
     folder_handler.check_and_create_folder(results_folder)
 
 
-def main(folder_to_analyze, control_template, obc=False, plop_path=c.PLOP_PATH, out_ligands=c.PATH_OUTPUT_LIGANDS,
-        sch_python=c.SCHRODINGER_PY_PATH, py2_env=c.PYTHON2_SCH_ENV, results_folder=c.RESULTS_PATH,
-        license_path=c.LICENSE, overlap=c.OVERLAP, pele_steps=c.STEPS, chain=c.CHAIN,
-        temp=c.TEMPERATURE):
-    pdbs_in_folder = glob.glob("{}/*.pdb".format(folder_to_analyze))
-    for pdb in pdbs_in_folder:
-        new_folder = os.path.join(folder_to_analyze, os.path.basename(pdb).split(".")[0])
+def main(ligands_folder, pdb_complex, control_template, chain_complex="L", chain_ligands="L", obc=False, plop_path=c.PLOP_PATH,
+         out_ligands=c.PATH_OUTPUT_LIGANDS, sch_python=c.SCHRODINGER_PY_PATH, py2_env=c.PYTHON2_SCH_ENV, results_folder=c.RESULTS_PATH,
+         license_path=c.LICENSE, overlap=c.OVERLAP, pele_steps=c.STEPS, chain=c.CHAIN, temp=c.TEMPERATURE, resnum=screenconf.RESNUM,
+         distances=screenconf.DISTANCE_ATOMS):
+    complex_files = replace_ligand.main(complex=pdb_complex, docked_pdbs_folder=ligands_folder,
+                                        chain_ligand_in_complex=chain_complex, chain_ligand_in_docked_files=chain_ligands)
+    for pdb, distance in zip(complex_files, distances):
+        print(pdb, distance)
+        new_folder = os.path.join(ligands_folder, os.path.basename(pdb).split(".")[0])
         if not os.path.exists(new_folder):
              os.mkdir(new_folder)
         os.chdir(new_folder)
+        chain_1, chain_2, resnum_1, resnum_2, atom_1, atom_2 = distance[0][0], distance[1][0],\
+                                                               distance[0][1], distance[1][1],\
+                                                               distance[0][2], distance[1][2]
         prepare_pele_simulation(pdb, control_template, obc, plop_path=plop_path, out_ligands=out_ligands,
                                 sch_python=sch_python, py2_env=py2_env, results_folder=results_folder,
-                                license_path=license_path, overlap=overlap, pele_steps=pele_steps, chain=chain,
-                                temp=temp)
+                                license_path=license_path, overlap=overlap, pele_steps=pele_steps, chain=chain_ligands,
+                                temp=temp, resnum=resnum, chain_1=chain_1, chain_2=chain_2, resnum_1=resnum_1, resnum_2=resnum_2, 
+                                atom_1=atom_1, atom_2=atom_2)
 
 
 if __name__ == '__main__':
-    fol2analyze, cntr_temp, obc = parse_arguments()
-    main(folder_to_analyze=fol2analyze, control_template=cntr_temp, obc=obc)
+    fol2analyze, pdb_complex, cntr_temp, obc = parse_arguments()
+    main(ligands_folder=os.path.abspath(fol2analyze), pdb_complex=os.path.abspath(pdb_complex), 
+         control_template=os.path.abspath(cntr_temp), obc=obc)
 

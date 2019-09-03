@@ -8,9 +8,8 @@ import multiprocessing as mp
 from sklearn.cluster import KMeans
 
 
-def cluster_df(path_csv, cluster_by_list):
-    df = pd.read_csv(path_csv, sep=";")
-    df = df.filter(cluster_by_list, axis=1)
+def cluster_df(dataframe, cluster_by_list):
+    df = dataframe.filter(cluster_by_list, axis=1)
     kmean = KMeans(n_clusters=500).fit(df)
     col = df.columns.values
     new_df_km = pd.DataFrame(kmean.cluster_centers_, columns=col)
@@ -22,7 +21,7 @@ def find_minimum_for_row_in_df(dataframe, row_c, cluster_by_columns):
     df_distances = []
     for index, row in dataframe.iterrows():
         vector_B = np.array([row[name] for name in cluster_by_columns])
-        distance = np.linalg.norm(vector_A - vector_B)
+        distance = np.linalg.norm(np.linalg.norm(vector_A) - np.linalg.norm(vector_B))
         df_distances.append([distance, index])
     minimum = min(df_distances)
     print(dataframe.iloc[minimum[1]])
@@ -64,23 +63,31 @@ def main(csv_path, out_path=None, sep=";", path_to_pdbs=None,
          clusterization_by_columns=("Binding Energy", "RMSD_ligand", "currentEnergy", "crystal_com_dist",
                                     "total_hbonds", "spec_hbonds")):
     df = pd.read_csv(csv_path, sep=sep)
-    km = cluster_df(csv_path, clusterization_by_columns)
+    df = df.fillna(0)
+    df = df.reset_index()
+    print(df.columns)
+    print(clusterization_by_columns)
+    km = cluster_df(df, clusterization_by_columns)
     if not out_path:
         out_path = csv_path.split(".csv")[0]+"_clustering.csv"
     print(out_path)
     new_df = detect_row_close_to_centroid(df, km, clusterization_by_columns)
     if path_to_pdbs:
-        extract_structure_from_pdb_folder(path_to_pdbs, new_df)
+        extract_structure_from_pdb_folder(path_to_pdbs, new_df, column_trajectory="file_from")
     new_df.to_csv(out_path, sep=sep, index=False)
 
 
-csv_list = glob.glob("/home/carlespl/project/Almirall/validation_compounds/adaptive_results_summary/*")
-pdbs_paths = glob.glob("/home/carlespl/project/Almirall/validation_compounds/simulation_results_with_exp_data_pdb/*")
+csv_list = glob.glob("/home/carlespl/project/Almirall/validation_compounds/validation_compounds_2/conf_12/results_summary/*.csv")
+pdbs_paths = glob.glob("/home/carlespl/project/Almirall/validation_compounds/validation_compounds_2/conf_12/temporary/*/")
 
 for csv in csv_list:
-    csv_id = csv.split("/")[-1].split("_")[0]
+    print(csv)
+    csv_id = csv.split("/")[-1].split("_adaptive_results_summary.csv")[0]
+    print(csv_id)
     for pdb in pdbs_paths:
-        pdb_id = pdb.split("/")[-1].split("_")[0]
+        print(pdb)
+        pdb_id = pdb.split("/")[-2]
+        print(pdb_id)
         if pdb_id == csv_id:
             main(csv_path=csv, path_to_pdbs=pdb)
 
