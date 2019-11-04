@@ -183,24 +183,19 @@ def check_bonds_of_folder(folder_to_analyze, residues_dictionary, lig_resname="L
             print(trajectory, n, len(hbonds_lig))
     return hbonds
 
-trajectory_path = "/home/carlespl/project/Almirall/validation_compounds/simulation_results_with_exp_data/73_wo14670_13/obc_adaptive_output_conf_11/0/73_wo14670_13_trajectory_1.xtc"
-topology_path = "/home/carlespl/project/Almirall/validation_compounds/simulation_results_with_exp_data/73_wo14670_13/obc_adaptive_output_conf_11/topology.pdb"
-traj = md.load(trajectory_path, top=topology_path)
-for model in traj[0]:
-    print(model)
-    select_specific_h_bond_with_ligand(model, residues_dict={688: ["O"], 690: ["N", "O"]}, cutoff=0.27)
 
-#dataframe = pd.DataFrame(columns=["trajectory_file", "model", "hbonds"])
-#paths = glob.glob("/home/carlespl/project/Almirall/validation_compounds/simulation_results_with_exp_data/73_wo14670_13/obc_adaptive_output_conf_11/[0-9]*")
-#for path in paths:
-#    results = check_bonds_of_folder(path, residues_dictionary={688: ["O"], 690: ["N", "O"]})
-#    for hbond in results:
-#        trajectory, model, hbonds = hbond
-#        amount_hbonds = len(hbonds)
-#        df = pd.DataFrame([[trajectory, model, amount_hbonds]], columns=["trajectory_file", "model", "hbonds"])
-#        dataframe = pd.concat([dataframe, df])
-#        print(dataframe)
-#dataframe.to_csv("/home/carlespl/project/Almirall/csv_testing.csv")
+dataframe = pd.DataFrame(columns=["trajectory_file", "model", "hbonds"])
+paths = glob.glob("/home/carlespl/project/Almirall/compunds_sd_august/SD143_like/validation_compounds_SD143_otraCola/8_PKD_TYK2_SD006_with_waters_processed_docked_SD-162/obc_adaptive_output_conf_12/[0-9]*")
+print(paths)
+for path in paths:
+    results = check_bonds_of_folder(path, residues_dictionary={688: ["O"], 690: ["N", "O"]})
+    for hbond in results:
+        trajectory, model, hbonds = hbond
+        amount_hbonds = len(hbonds)
+        df = pd.DataFrame([[trajectory, model, amount_hbonds]], columns=["trajectory_file", "model", "hbonds"])
+        dataframe = pd.concat([dataframe, df])
+        print(dataframe)
+dataframe.to_csv("/home/carlespl/project/Almirall/csv_testing.csv")
 
 
 #load_trajectories_of_csvs("/home/carlespl/project/Almirall/validation_compounds/"

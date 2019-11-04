@@ -1,10 +1,8 @@
 import os
-import sys
 from schrodinger import structure as st
-import subprocess
 import argparse
 # Local import
-import PlopRotTemp_S_2017.main as plop
+from PELERunner.PlopRotTemp_S_2017 import main as plop
 
 
 def convert_mae(ligands):
@@ -15,8 +13,6 @@ def convert_mae(ligands):
             structure_mae: ligand
             res = residue
     """
-
-    
     for structure in st.StructureReader(ligands):
         for residue in structure.residue:
             res = residue.pdbres.strip()

@@ -5,7 +5,7 @@ import shutil
 import re
 import warnings
 from schrodinger import structure
-from PlopRotTemp_S_2017.template.chargeHandler import ChargeHandler
+from PELERunner.PlopRotTemp_S_2017.template.chargeHandler import ChargeHandler
 from itertools import groupby
 
 try:

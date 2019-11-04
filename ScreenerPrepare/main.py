@@ -27,7 +27,7 @@ def parse_arguments():
     renaming, etc.) """)
     required_named = parser.add_argument_group('required named arguments')
     # Growing related arguments
-    required_named.add_argument("-pdb_receptor",
+    required_named.add_argument("-pdb_receptor", type=str,
                                 help="""Absolute path to the PDB file used as receptor. Remember to use Protein
                                 Preparation Wizard of maestro before running this program. Additionally, take in
                                 mind that you must ensure that the PDB atom names are correct to then run PELE.""")
@@ -35,16 +35,18 @@ def parse_arguments():
                                 help="""Absolute path the PDB file of the desired ligand. Take into account that
                                 this software does not perform superimpositions, so ensure that the ligand is
                                 correctly placed in the binding site (previous docking required).""")
-    required_named.add_argument("-adapt_template",
-                                help="""""")
-    required_named.add_argument("-pele_template",
-                                help="""""")
+    required_named.add_argument("-adapt_template", type=str,
+                                help="""Path to templatized adaptive configuration file.""")
+    required_named.add_argument("-pele_template", type=str,
+                                help="""Path to templatized PELE configuration file.""")
 
     parser.add_argument("-c", "--chain_ligand", default="L",
                         help="""Chain name for the ligand.""")
+    parser.add_argument("-obc", "--set_obc", default=False, action="store_true",
+                        help="Set this flag ON to compute OBC parameters of the ligand.")
     args = parser.parse_args()
 
-    return args.pdb_receptor, args.pdb_ligand, args.adapt_template, args.pele_template, args.chain_ligand
+    return args.pdb_receptor, args.pdb_ligand, args.adapt_template, args.pele_template, args.chain_ligand, args.set_obc
 
 
 def compute_center_of_chain(pdb_object, chain="L"):
@@ -100,7 +102,6 @@ def add_ligand_to_receptor(receptor_object, ligand_object, ligand_chain="L"):
 def prepare_ligands_templates(sch_path, plop_relative_path, pdb_lig, rotamers, out_temp, out_rot):
     sch_python = os.path.join(sch_path, "run")
     cmd = "{} {} {} {} {} {}".format(sch_python, plop_relative_path, pdb_lig, rotamers, out_temp, out_rot)
-    print(cmd)
     try:
         subprocess.call(cmd.split())
     except OSError:
@@ -115,7 +116,7 @@ def prepare_ligands_templates(sch_path, plop_relative_path, pdb_lig, rotamers, o
 
 def prepare_obc_parameters(sch_python, obc_param_path, template_file, folder):
     if not sch_python.endswith("python"):
-    	cmd = "{}/python {} {}".format(sch_python, obc_param_path, template_file)
+        cmd = "{}/python {} {}".format(sch_python, obc_param_path, template_file)
     else:
         try:
             cmd = "{} {} {}".format(sch_python, obc_param_path, template_file)
@@ -135,8 +136,8 @@ def prepare_obc_parameters(sch_python, obc_param_path, template_file, folder):
 
 def prepare_single_pdb(pdb_receptor, pdb_ligand, adaptive_template, pele_template, documents_path=c.DOCUMENTS,
                        data_path=c.DATA, ligand_chain="L", license=c.LICENSE, rotamers=c.ROTAMERS, sch_path=c.SCHRODINGER,
-                       obc_script_path=c.OBC_PATH, radius=4, ligname="LIG", chain_dist_1=None, chain_dist_2=None,
-                       resnum_dist_1=None, resnum_dist_2=None, atom_dist_1=None, atom_dist_2=None):
+                       obc_script_path=c.OBC_PATH, radius=6, ligname="LIG", chain_dist_1=None, chain_dist_2=None,
+                       resnum_dist_1=None, resnum_dist_2=None, atom_dist_1=None, atom_dist_2=None, obc=False):
 
     receptor, center = get_receptor(pdb_file=pdb_receptor, chain_to_center=ligand_chain)
     ligand = prody.parsePDB(pdb_ligand)
@@ -151,6 +152,8 @@ def prepare_single_pdb(pdb_receptor, pdb_ligand, adaptive_template, pele_templat
     with open(os.path.join(out_folder, complex_filename), "w") as pdb_out:
         pdb_out.write(pdb_corrected)
     center_string = ", ".join([str(center[0]), str(center[1]), str(center[2])])
+    print("Center of Mass computed: {}".format(center_string))
+    print("Preparing Control File...")
     prepare_controls.main(pele_control_file=pele_template, pele_fileout=os.path.join(out_folder, pele_template),
                           adaptive_control_file=adaptive_template, adaptive_fileout=os.path.join(out_folder,
                                                                                                  adaptive_template),
@@ -159,21 +162,23 @@ def prepare_single_pdb(pdb_receptor, pdb_ligand, adaptive_template, pele_templat
                           pdb_in=complex_filename, ligname=ligname, chain_dist_1=chain_dist_1, chain_dist_2=chain_dist_2,
                           resnum_dist_1=resnum_dist_1, resnum_dist_2=resnum_dist_2, atom_dist_1=atom_dist_1,
                           atom_dist_2=atom_dist_2)
+    print("Creating Data, Documents and Output folder...")
     prepare_folders.main(destination_path=out_folder, documents_path=documents_path, data_path=data_path)
     prody.writePDB(os.path.join(out_folder, "{}.pdb".format(ligname)), ligand)
+    print("Creating Templates, Rotamer Libraries and Folders...")
     out_temp = os.path.join(out_folder, "DataLocal/Templates/OPLS2005/HeteroAtoms")
     out_rot = os.path.join(out_folder, "DataLocal/LigandRotamerLibs")
     plop_relative_path = os.path.join(package_path, "PlopRotTemp_S_2017/ligand_prep.py")
     prepare_ligands_templates(sch_path, plop_relative_path, pdb_ligand, rotamers, out_temp, out_rot)
-    if obc_script_path:
+    if obc:
         prepare_obc_parameters(sch_path, obc_script_path, os.path.join(out_temp, ligname.lower() + "z"), out_folder)
 
 
 def main(pdb_receptor, ligand_folder, adaptive_template, pele_template, documents_path=c.DOCUMENTS,
          data_path=c.DATA, ligand_chain="L", license=c.LICENSE, rotamers=c.ROTAMERS, sch_path=c.SCHRODINGER,
-         obc_script_path=c.OBC_PATH, radius=4, ligname="LIG", distances_instructions=c.DISTANCE_ATOMS):
+         obc_script_path=c.OBC_PATH, radius=6, ligname="LIG", distances_instructions=c.DISTANCE_ATOMS, obc=False):
     ligands = glob.glob(ligand_folder)
-    print("LIGANDS found: {}".format(ligands))
+    print("{} LIGANDS found: {}".format(len(ligands), ligands))
     ligands = sorted(ligands)
     if distances_instructions:
         for pdb_ligand, distance_ins in zip(ligands, distances_instructions):
@@ -184,21 +189,26 @@ def main(pdb_receptor, ligand_folder, adaptive_template, pele_template, document
                 print("Preparing {}... ".format(pdb_ligand))
                 prepare_single_pdb(pdb_receptor, pdb_ligand, adaptive_template, pele_template, documents_path, data_path,
                                    ligand_chain, license, rotamers, sch_path, obc_script_path, radius, ligname, chain_1,
-                                   chain_2, residue_1, residue_2, atom_1, atom_2)
+                                   chain_2, residue_1, residue_2, atom_1, atom_2, obc)
+                print("Preparation of {} finished SUCCESSFULLY!".format(pdb_ligand))
             except Exception:
+                print("WARNING: Preparation of {} FAILED!!".format(pdb_ligand))
                 traceback.print_exc()
     else:
         for pdb_ligand in ligands:
             try:
                 print("Preparing {}... ".format(pdb_ligand))
                 prepare_single_pdb(pdb_receptor, pdb_ligand, adaptive_template, pele_template, documents_path,
-                                   data_path, ligand_chain, license, rotamers, sch_path, radius, ligname)
+                                   data_path, ligand_chain, license, rotamers, sch_path, radius, ligname=ligname,
+                                   obc=obc)
+                print("Preparation of {} finished SUCCESSFULLY!".format(pdb_ligand))
             except Exception:
+                print("WARNING: Preparation of {} FAILED!!".format(pdb_ligand))
                 traceback.print_exc()
 
 
 if __name__ == '__main__':
-    pdb_receptor, ligand_folder, adapt_template, pele_template, ligand_chain = parse_arguments()
+    pdb_receptor, ligand_folder, adapt_template, pele_template, ligand_chain, obc = parse_arguments()
     main(pdb_receptor=pdb_receptor, ligand_folder=ligand_folder, ligand_chain=ligand_chain,
-         pele_template=pele_template, adaptive_template=adapt_template)
+         pele_template=pele_template, adaptive_template=adapt_template, obc=obc)
 

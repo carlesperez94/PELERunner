@@ -48,10 +48,13 @@ def solve_ters_and_water(pdb_lines_list):
                 if check_triad == 1:
                     indexes_to_insert.append(index)
                 hoh_counter += 1
-    indexes_to_insert.append(water_indexes[-1]+1)
+    if water_indexes:
+        indexes_to_insert.append(water_indexes[-1]+1)
+        print("Adding TERs between waters...")
     indexes_to_insert = sorted(indexes_to_insert, reverse=True)
     for index in indexes_to_insert:
         if not pdb_lines_list[index-1].startswith("TER"):
+            print("Adding TERs between GAPS of the protein...")
             pdb_lines_list.insert(index, "TER\n")
     return pdb_lines_list
 
@@ -61,6 +64,21 @@ def add_ters_to_pdb(pdb_file):
         pdb_lines = pdb.readlines()
     atom_solved = solve_ters_of_atom_section(pdb_lines)
     water_solved = solve_ters_and_water(atom_solved)
+    check_ter_before_hetatom(water_solved)
     pdb_corrected = "".join(water_solved)
     return pdb_corrected
+
+
+def check_ter_before_hetatom(pdb_lines):
+    for line in pdb_lines:
+        if line.startswith("HETATM"):
+            index = pdb_lines.index(line)
+            if pdb_lines[index-1].startswith("HETATM") or pdb_lines[index-1].startswith("TER"):
+                pass
+            elif pdb_lines[index-1].startswith("ATOM"):
+                pdb_lines.insert(index, "TER\n")
+                print("Adding TERs between protein and ligand...")
+
+
+
 

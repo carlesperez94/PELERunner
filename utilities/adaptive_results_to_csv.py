@@ -140,7 +140,9 @@ def concat_reports_in_csv(adaptive_results_path, output_file_path, report_prefix
 
 def main(simulations_path, output_file_path, report_prefix="report_", trajectory_prefix="trajectory_",
          path_to_adaptive_results=vrb.PATH_PATTER_TO_ADAPTIVE_RESULTS, extract_pdbs=True):
-    path_list = glob.glob("{}/[0-9]_*".format(simulations_path))
+    path_list = glob.glob("{}".format(simulations_path))
+    if not path_list:
+        raise FileNotFoundError("'{}' does not contain any folder".format(simulations_path))
     if not os.path.exists(output_file_path):
         os.mkdir(output_file_path)
     for path in path_list:

@@ -1,9 +1,35 @@
 import os
 import glob
+import argparse
 import traceback
 import pandas as pd
 import multiprocessing
 from collections import Counter
+
+
+def parse_arguments():
+    """
+            Parse user arguments
+
+            Output: list with all the user arguments
+        """
+    # All the docstrings are very provisional and some of them are old, they would be changed in further steps!!
+    parser = argparse.ArgumentParser(description="""This program counts hbonds for AdaptivePELE simulations.""")
+    required_named = parser.add_argument_group('required named arguments')
+    # Growing related arguments
+    required_named.add_argument("-d", "--data",
+                                help="""Patter to csv files that contain the data of the simulations.""")
+    required_named.add_argument("-hb", "--hbonds",
+                                help="""Patter to csv files that contain the data of the hbonds.""")
+    parser.add_argument("-sp", "--special_hbonds", default=["VAL690-N"],
+                        help="""H bonds that are considered as special. They would be counted apart.""")
+    parser.add_argument("-j", "--jump", default=False, action="store_true",
+                        help="""Set this flag to True you have already computed the number of H bonds in order to
+                         save these computations.""")
+
+    args = parser.parse_args()
+
+    return args.data, args.hbonds, args.special_hbonds, args.jump
 
 
 def count_total_hbonds_for_model(csv_path, special_bonds_to_count, sep=",", model_col="model",
@@ -74,29 +100,35 @@ def add_csv_column_to_csv(csv_original, csv_to_add_path, sep_o=",", sep_a=",", c
     dt_original.to_csv(csv_original, sep_o, index=False)
 
 
+def main(data_csv_pattern, hbonds_csv_pattern, special_bonds_to_count, jump_hbond_counter=False):
+    hbonds_csvs = glob.glob("{}/hbonds_analysis.csv".format(hbonds_csv_pattern))
+    if not jump_hbond_counter:
+        for csv in hbonds_csvs:
+            count_total_hbonds_for_model(csv_path=csv, special_bonds_to_count=special_bonds_to_count)
+    folder_list = glob.glob("{}/hbond_summary.csv".format(hbonds_csv_pattern))
+    if not folder_list:
+        raise FileNotFoundError("The pattern: '{}' does not find any hbond file.".format(hbonds_csv_pattern))
+    csv_list = glob.glob(data_csv_pattern)
+    if not csv_list:
+        raise FileNotFoundError("The pattern: '{}' does not find any data file.".format(data_csv_pattern))
+    for folder in folder_list:
+        folder_id = folder.split("/")[-3].split("_")[-1]
+        print("FOLDER ID: {}".format(folder_id))
+        for csv in csv_list:
+            csv_id = csv.split("/")[-1]
+            print("CSV ID: {}".format(csv_id))
+            if folder_id in csv_id:
+                add_csv_column_to_csv(csv_original=csv, csv_to_add_path=folder, col_name_to_id_original="file_from",
+                                      col_name_to_id_add="trajectory", sep_o=";")
+
+                print(folder, csv)
 
 
-#folder_list = glob.glob("/home/carlespl/project/Almirall/validation_compounds/validation_compounds_2/conf_12/7_BMS986165_no_wat_2*/"
-#                        "obc_adaptive*/hbonds_analysis.csv")
-#
-#for folder in folder_list:
-#    count_total_hbonds_for_model(folder, special_bonds_to_count=["690-N", "VAL690-O", "GLU598-O"], sep=",",
-#                                 model_col="model", trajectory_col="trajectory", hbonds_col="hbonds")
-#
-folder_list = glob.glob("/home/carlespl/project/Almirall/validation_compounds/validation_compounds_1/simulation_results_with_exp_data/*/obc_adaptive*/hbond_summary.csv")
-print(folder_list)
-csv_list = glob.glob("/home/carlespl/project/Almirall/validation_compounds/to_ML/*/selection_report.csv")
-print(csv_list)
-for folder in folder_list:
-   #print(folder)
-    folder_id = folder.split("/")[-3].split("_")[-1]
-    print(folder_id)
-    for csv in csv_list:
-        csv_id = csv.split("/")[-2]
-        print(csv_id)
-        if folder_id == csv_id:
-            add_csv_column_to_csv(csv_original=csv, csv_to_add_path=folder, col_name_to_id_original="trajectory",
-                                  col_name_to_id_add="trajectory", sep_o=";")
+if __name__ == '__main__':
+    data, hbonds, special, jump = parse_arguments()
+    main(data_csv_pattern=data, hbonds_csv_pattern=hbonds, special_bonds_to_count=special, jump_hbond_counter=jump)
 
-            print(folder, csv)
+
+
+
 

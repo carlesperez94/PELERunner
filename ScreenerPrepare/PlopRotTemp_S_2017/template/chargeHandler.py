@@ -2,7 +2,7 @@
 
 import sys
 import re
-from PlopRotTemp_S_2017.template.tmp_helpers import Helper
+from PELERunner.PlopRotTemp_S_2017.template.tmp_helpers import Helper
 
 
 
