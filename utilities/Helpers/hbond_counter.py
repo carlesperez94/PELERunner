@@ -21,7 +21,7 @@ def parse_arguments():
                                 help="""Patter to csv files that contain the data of the simulations.""")
     required_named.add_argument("-hb", "--hbonds",
                                 help="""Patter to csv files that contain the data of the hbonds.""")
-    parser.add_argument("-sp", "--special_hbonds", default=["VAL690-N"],
+    parser.add_argument("-sp", "--special_hbonds", default=None, type=str, nargs='+',
                         help="""H bonds that are considered as special. They would be counted apart.""")
     parser.add_argument("-j", "--jump", default=False, action="store_true",
                         help="""Set this flag to True you have already computed the number of H bonds in order to
@@ -41,10 +41,10 @@ def count_total_hbonds_for_model(csv_path, special_bonds_to_count, sep=",", mode
         trajectory_name = row[trajectory_col]
         model = row[model_col]
         hbond = row[hbonds_col]
-        print(trajectory_name, model, hbond)
         list_of_traj_and_models.append("{}={}".format(trajectory_name, model))
         for hbond_spec in special_bonds_to_count:
             if hbond_spec in hbond:
+                print("special hbond: {} detected!".format(hbond))
                 list_of_traj_and_models_with_spec_hbonds.append("{}={}".format(trajectory_name, model))
     dictionary = dict(Counter(list_of_traj_and_models))
     dictionary_spec = dict(Counter(list_of_traj_and_models_with_spec_hbonds))
