@@ -40,13 +40,16 @@ def parse_arguments():
     required_named.add_argument("-pele_template", type=str,
                                 help="""Path to templatized PELE configuration file.""")
 
-    parser.add_argument("-c", "--chain_ligand", default="L",
+    parser.add_argument("-c", "--chain_ligand",type=str, default="L",
                         help="""Chain name for the ligand.""")
     parser.add_argument("-obc", "--set_obc", default=False, action="store_true",
                         help="Set this flag ON to compute OBC parameters of the ligand.")
+    parser.add_argument("-rot", "--rotamers", type=str, default=c.ROTAMERS,
+                        help="Degrees of rotation for the rotamers libraries of PlopRotTemp.")
     args = parser.parse_args()
 
-    return args.pdb_receptor, args.pdb_ligand, args.adapt_template, args.pele_template, args.chain_ligand, args.set_obc
+    return args.pdb_receptor, args.pdb_ligand, args.adapt_template, args.pele_template, args.chain_ligand, args.set_obc,\
+           args.rotamers
 
 
 def compute_center_of_chain(pdb_object, chain="L"):
@@ -208,7 +211,7 @@ def main(pdb_receptor, ligand_folder, adaptive_template, pele_template, document
 
 
 if __name__ == '__main__':
-    pdb_receptor, ligand_folder, adapt_template, pele_template, ligand_chain, obc = parse_arguments()
+    pdb_receptor, ligand_folder, adapt_template, pele_template, ligand_chain, obc, rotamers = parse_arguments()
     main(pdb_receptor=pdb_receptor, ligand_folder=ligand_folder, ligand_chain=ligand_chain,
-         pele_template=pele_template, adaptive_template=adapt_template, obc=obc)
+         pele_template=pele_template, adaptive_template=adapt_template, obc=obc, rotamers=rotamers)
 
