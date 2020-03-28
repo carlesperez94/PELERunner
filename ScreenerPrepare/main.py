@@ -3,7 +3,6 @@ import argparse
 import subprocess
 import glob
 import traceback
-
 import prody
 
 import pdb_prepare
@@ -46,10 +45,12 @@ def parse_arguments():
                         help="Set this flag ON to compute OBC parameters of the ligand.")
     parser.add_argument("-rot", "--rotamers", type=str, default=c.ROTAMERS,
                         help="Degrees of rotation for the rotamers libraries of PlopRotTemp.")
+    parser.add_argument("-y", "--yes", action="store_true", default=False,
+                        help="If set it will not ask you about permision to delete ligands from the complex.")
     args = parser.parse_args()
 
     return args.pdb_receptor, args.pdb_ligand, args.adapt_template, args.pele_template, args.chain_ligand, args.set_obc,\
-           args.rotamers
+           args.rotamers, args.yes
 
 
 def compute_center_of_chain(pdb_object, chain="L"):
@@ -64,14 +65,17 @@ def get_resnum(pdb_object, chain="L"):
     return resnum
 
 
-def get_receptor(pdb_file, chain_to_center="L"):
+def get_receptor(pdb_file, chain_to_center="L", yes=False):
     pdb = prody.parsePDB(pdb_file)
-    ligand_or_metal = pdb.select("hetero and not water")
+    ligand_or_metal = pdb.select("chain {} and not water".format(chain_to_center))
     if chain_to_center:
         center = compute_center_of_chain(pdb, chain_to_center)
     if ligand_or_metal:
-        answer = input("WARNING! Ligand or metal detected. This part of the pdb will be deleted. Do you want to \n"
-                       "continue? [y/n]: ")
+        if not yes: 
+            answer = input("WARNING! Ligand or metal detected. This part of the pdb will be deleted. Do you want to \n"
+                           "continue? [y/n]: ")
+        else:
+            answer = "y"
         while True:
             if answer == "y":
                 receptor = pdb.select("protein or water")
@@ -140,9 +144,9 @@ def prepare_obc_parameters(sch_python, obc_param_path, template_file, folder):
 def prepare_single_pdb(pdb_receptor, pdb_ligand, adaptive_template, pele_template, documents_path=c.DOCUMENTS,
                        data_path=c.DATA, ligand_chain="L", license=c.LICENSE, rotamers=c.ROTAMERS, sch_path=c.SCHRODINGER,
                        obc_script_path=c.OBC_PATH, radius=6, ligname="LIG", chain_dist_1=None, chain_dist_2=None,
-                       resnum_dist_1=None, resnum_dist_2=None, atom_dist_1=None, atom_dist_2=None, obc=False):
+                       resnum_dist_1=None, resnum_dist_2=None, atom_dist_1=None, atom_dist_2=None, obc=False, yes=False):
 
-    receptor, center = get_receptor(pdb_file=pdb_receptor, chain_to_center=ligand_chain)
+    receptor, center = get_receptor(pdb_file=pdb_receptor, chain_to_center=ligand_chain, yes=yes)
     ligand = prody.parsePDB(pdb_ligand)
     complex_stru = add_ligand_to_receptor(receptor_object=receptor, ligand_object=ligand, ligand_chain=ligand_chain)
     resnum = get_resnum(ligand, ligand_chain)
@@ -179,7 +183,8 @@ def prepare_single_pdb(pdb_receptor, pdb_ligand, adaptive_template, pele_templat
 
 def main(pdb_receptor, ligand_folder, adaptive_template, pele_template, documents_path=c.DOCUMENTS,
          data_path=c.DATA, ligand_chain="L", license=c.LICENSE, rotamers=c.ROTAMERS, sch_path=c.SCHRODINGER,
-         obc_script_path=c.OBC_PATH, radius=6, ligname="LIG", distances_instructions=c.DISTANCE_ATOMS, obc=False):
+         obc_script_path=c.OBC_PATH, radius=6, ligname="LIG", distances_instructions=c.DISTANCE_ATOMS, obc=False,
+         yes=False):
     ligands = glob.glob(ligand_folder)
     print("{} LIGANDS found: {}".format(len(ligands), ligands))
     ligands = sorted(ligands)
@@ -192,7 +197,7 @@ def main(pdb_receptor, ligand_folder, adaptive_template, pele_template, document
                 print("Preparing {}... ".format(pdb_ligand))
                 prepare_single_pdb(pdb_receptor, pdb_ligand, adaptive_template, pele_template, documents_path, data_path,
                                    ligand_chain, license, rotamers, sch_path, obc_script_path, radius, ligname, chain_1,
-                                   chain_2, residue_1, residue_2, atom_1, atom_2, obc)
+                                   chain_2, residue_1, residue_2, atom_1, atom_2, obc, yes)
                 print("Preparation of {} finished SUCCESSFULLY!".format(pdb_ligand))
             except Exception:
                 print("WARNING: Preparation of {} FAILED!!".format(pdb_ligand))
@@ -203,7 +208,7 @@ def main(pdb_receptor, ligand_folder, adaptive_template, pele_template, document
                 print("Preparing {}... ".format(pdb_ligand))
                 prepare_single_pdb(pdb_receptor, pdb_ligand, adaptive_template, pele_template, documents_path,
                                    data_path, ligand_chain, license, rotamers, sch_path, radius, ligname=ligname,
-                                   obc=obc)
+                                   obc=obc,yes=yes)
                 print("Preparation of {} finished SUCCESSFULLY!".format(pdb_ligand))
             except Exception:
                 print("WARNING: Preparation of {} FAILED!!".format(pdb_ligand))
@@ -211,7 +216,8 @@ def main(pdb_receptor, ligand_folder, adaptive_template, pele_template, document
 
 
 if __name__ == '__main__':
-    pdb_receptor, ligand_folder, adapt_template, pele_template, ligand_chain, obc, rotamers = parse_arguments()
+    pdb_receptor, ligand_folder, adapt_template, pele_template, ligand_chain, obc, rotamers, yes = parse_arguments()
     main(pdb_receptor=pdb_receptor, ligand_folder=ligand_folder, ligand_chain=ligand_chain,
-         pele_template=pele_template, adaptive_template=adapt_template, obc=obc, rotamers=rotamers)
+         pele_template=pele_template, adaptive_template=adapt_template, obc=obc, rotamers=rotamers,
+         yes=yes)
 

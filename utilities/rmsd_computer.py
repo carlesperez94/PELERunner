@@ -39,9 +39,9 @@ def compute_ligand_and_close_rmsd(trajectory_target, trajectory_reference, resid
 
 def rmsd_calculator(file_path, file_reference, ligand_resname="LIG", pdb=True, heavy=True, residues_ids=False):
     topology_path_splited = file_path.split("/")[0:-2]
-    topology_path = os.path.join("/".join(topology_path_splited), "topology.pdb")
+    topology_path = os.path.join("/".join(topology_path_splited), "topologies/topology_0.pdb")
     trajectory_target = read_structure_xtc(file_path, topology_path, pdb=False)
-    trajectory_reference = read_structure_xtc(file_path=topology_path, topology_file_path=None, pdb=pdb)
+    trajectory_reference = read_structure_xtc(file_path=file_reference, topology_file_path=None, pdb=pdb)
     if not residues_ids:
         rmsd = compute_ligand_rmsd(trajectory_target, trajectory_reference, ligand_resname, heavy)
     else:
@@ -69,11 +69,8 @@ def main(csv_file, reference, path_to_simulations, output_filepath, file_column=
     dataframe.to_csv(output_filepath, sep=separator, index=False)
     return dataframe
 
-
-main(csv_file="/home/carlespl/project/Almirall/crystals/with_waters/summary_results/8_PKD_TYK2_SD006_with_waters_adaptive_results_summary.csv",
-     reference="/home/carlespl/project/Almirall/crystals/with_waters/simulation_results/8_PKD_TYK2_SD006_with_waters/8_PKD_TYK2_SD006_with_waters_processed.pdb",
-     output_filepath="/home/carlespl/project/Almirall/crystals/with_waters/summary_results/8_PKD_TYK2_SD006_with_waters_adaptive_results_summary.csv",
-     path_to_simulations="/home/carlespl/project/Almirall/crystals/with_waters/simulation_results",
-     ligand_resname="INX",
-     column_name="RMSD_close_area",
-     residues_ids="595 596 597 598 601 603 640 642 662 647 672 673 687 688 689 690 691 692 693 694 697 738 739 741 758 759")
+main(csv_file="/gpfs/projects/bsc72/vs/alm/ITK/crystals_analysis/cross_PELE_4PP9/summary_results/4pp9_prepared_complex_noanisou_3MIY_0_adaptive_results_summary.csv",
+     reference="/gpfs/projects/bsc72/vs/alm/ITK/crystals_analysis/Crystals/3MIY_2.pdb",
+     output_filepath="/gpfs/projects/bsc72/vs/alm/ITK/crystals_analysis/cross_PELE_4PP9/summary_results/4pp9_prepared_complex_noanisou_3MIY_0_adaptive_results_summary_recomputed.csv",
+     path_to_simulations="/gpfs/projects/bsc72/vs/alm/ITK/crystals_analysis/cross_PELE_4PP9",
+     ligand_resname="LIG")

@@ -11,7 +11,7 @@ import variables as vrb
 
 
 def open_structure_from_dataframe(csv_file, path_to_simulations, path_to_clusters=vrb.PATH_PATTER_TO_CLUSTERS_FROM_SIMS,
-                                  file_column="ID", separator=";", read_xtc=False):
+                                  file_column="file_from", separator=";", read_xtc=False):
     files_to_analyze = []
     dataframe = pd.read_csv(csv_file, sep=separator)
     if not read_xtc:
@@ -25,6 +25,7 @@ def open_structure_from_dataframe(csv_file, path_to_simulations, path_to_cluster
     else:
         for index, row in dataframe.iterrows():
             file_to_analyse = row[file_column]
+            print(files_to_analyze)
             file_in = glob.glob(file_to_analyse)[0]
             if not file_in in files_to_analyze:
                 files_to_analyze.append(file_in)
@@ -54,7 +55,7 @@ def select_atom_pair_from_ligand_and_residue_mdtraj(trajectory, resid, name_resi
     return selection_ligand, selection_residue
 
 
-def select_atom_pair_from_ligand_and_residue(pdb_file, resid, name_residue, name_ligand, ligand_chain="Z"):
+def select_atom_pair_from_ligand_and_residue(pdb_file, resid, name_residue, name_ligand, ligand_chain="L"):
     molecule = read_structure_pdb(pdb_file)
     selection_ligand = molecule.select("chain {} and name {}".format(ligand_chain, name_ligand))
     selection_residue = molecule.select("resid {} and name {}".format(resid, name_residue))
